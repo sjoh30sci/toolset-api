@@ -16,6 +16,8 @@ func (h *Handlers) Root(c echo.Context) error {
 		"endpoints": map[string]any{
 			"health":    "GET /health",
 			"tools":     "GET /tools",
+			"search":    "POST /search",
+			"files":     "POST /files/read, /files/write, /files/list, /files/delete, /files/move",
 			"mcp":       "POST /mcp/initialize, /mcp/tools/list, /mcp/tools/call, /mcp/resources/read",
 			"mcpSchema": "GET /mcp/schema",
 		},

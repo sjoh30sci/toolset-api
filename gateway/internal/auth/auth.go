@@ -136,6 +136,27 @@ func (a *Authenticator) handleTokenMode(c echo.Context, next echo.HandlerFunc, t
 	return next(c)
 }
 
+// RequireTool returns middleware that restricts access to a named tool. It must
+// run after Middleware(). In token mode, the request's token must either be a
+// wildcard token (empty tool_id) or have a tool_id matching toolName. In none
+// (local) mode all tools are permitted.
+func (a *Authenticator) RequireTool(toolName string) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			if mode, _ := c.Get(CtxAuthMode).(string); mode != "token" {
+				return next(c)
+			}
+			toolID, _ := c.Get(CtxToolID).(string)
+			if toolID == "" || toolID == toolName {
+				return next(c)
+			}
+			return echo.NewHTTPError(http.StatusForbidden, map[string]any{
+				"error": "token does not grant access to tool " + toolName,
+			})
+		}
+	}
+}
+
 // lookupToken loads a token record from the database. Returns (nil, nil) when
 // no DB is configured (Phase 1 scaffolding).
 func (a *Authenticator) lookupToken(token string) (*Token, error) {

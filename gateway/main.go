@@ -65,6 +65,11 @@ func run() error {
 
 	reg := registry.New(database.DB)
 
+	// Register built-in tool services and probe their health.
+	if err := reg.RegisterDefaults(context.Background()); err != nil {
+		logger.Warn("registering default tools failed", "err", err)
+	}
+
 	// Log tool readiness based on config.
 	for name, tc := range cfg.Tools {
 		state := "waiting"
@@ -101,6 +106,17 @@ func run() error {
 	api.GET("/tools", h.Tools)
 	api.POST("/tools/list", h.MCPToolsList)
 	api.POST("/tools/call", h.MCPToolsCall)
+
+	// Search endpoint (scoped to the "search" tool token in token mode).
+	api.POST("/search", h.Search, authn.RequireTool("search"))
+
+	// File operations (scoped to the "files" tool token in token mode).
+	files := api.Group("/files", authn.RequireTool("files"))
+	files.POST("/read", h.FilesRead)
+	files.POST("/write", h.FilesWrite)
+	files.POST("/list", h.FilesList)
+	files.POST("/delete", h.FilesDelete)
+	files.POST("/move", h.FilesMove)
 
 	api.POST("/mcp/initialize", h.MCPInitialize)
 	api.POST("/mcp/tools/list", h.MCPToolsList)

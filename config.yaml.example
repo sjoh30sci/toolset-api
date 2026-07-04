@@ -34,3 +34,19 @@ tools:
   browser:
     enabled: true
     container: browser
+
+# Phase 2 tool settings. These are consumed by the gateway when proxying.
+search:
+  enabled: true
+  timeout: 5s            # per-request upstream timeout
+  # Default engines used when a request omits "engines". Empty = all enabled.
+  engines:
+    - google
+    - bing
+    - duckduckgo
+    - brave
+
+files:
+  enabled: true
+  sandbox_root: /data/files
+  max_file_size: 104857600   # 100MB, in bytes

@@ -54,6 +54,93 @@ external bridge.
 Public endpoints (`/` and `/health`) bypass auth so orchestrators and Docker
 health checks can probe them.
 
+## Tool request flow (Phase 2)
+
+The gateway proxies two tool services over the internal network.
+
+```
+client                gateway                 search (SearXNG)      files-server
+  |  POST /search        |                          |                    |
+  |--------------------->|                          |                    |
+  |                      | auth + RequireTool("search")                  |
+  |                      |  GET /search?q=..&format=json                 |
+  |                      |------------------------->|                    |
+  |                      |     JSON results         |                    |
+  |                      |<-------------------------|                    |
+  |   normalized results |                          |                    |
+  |<---------------------|                          |                    |
+  |                      |                          |                    |
+  |  POST /files/write   |                          |                    |
+  |--------------------->|  auth + RequireTool("files")                  |
+  |                      |  POST /files/write (pass-through)             |
+  |                      |---------------------------------------------->|
+  |                      |            201 {path,size}                    |
+  |                      |<----------------------------------------------|
+  |   201 {path,size}    |                          |                    |
+  |<---------------------|                          |                    |
+```
+
+- `search` is normalized: the gateway maps SearXNG's `results[].content` to our
+  `snippet` field and enforces a 5s upstream timeout (502 on failure/timeout).
+- `files/*` are transparent pass-throughs: the gateway forwards the JSON body
+  (and any `Authorization` header) and relays the upstream status + body.
+
+## Tool endpoints & schemas (Phase 2)
+
+### `POST /search`
+
+Request:
+
+```json
+{
+  "query": "golang tutorials",
+  "engines": ["google", "bing"],
+  "page": 1,
+  "lang": "en"
+}
+```
+
+Only `query` is required. `engines` defaults to all enabled engines, `page`
+defaults to 1.
+
+Response `200`:
+
+```json
+{
+  "query": "golang tutorials",
+  "page": 1,
+  "results": [
+    {
+      "title": "The Go Programming Language",
+      "url": "https://go.dev",
+      "snippet": "Build fast, reliable software.",
+      "engine": "google"
+    }
+  ],
+  "count": 1
+}
+```
+
+Errors: `400` (missing/invalid query or body), `502` (upstream unavailable,
+timeout, or non-200).
+
+### `POST /files/read | write | list | delete | move`
+
+All paths are relative to the sandbox root (`/data/files`). The gateway proxies
+these verbatim to `http://files-server:8765/files/<op>`. Semantics enforced by
+the file-server:
+
+| Endpoint        | Request body                                | Success | Errors            |
+|-----------------|---------------------------------------------|---------|-------------------|
+| `/files/read`   | `{"path":"a.txt"}`                          | `200 {"content":"..."}` | `400`,`404`,`413` |
+| `/files/write`  | `{"path":"a.txt","content":"..."}`          | `201 {"path":..,"size":N}` | `400`,`413`       |
+| `/files/list`   | `{"path":"dir/","recursive":false}`         | `200 {"files":[],"dirs":[]}` | `400`,`404`       |
+| `/files/delete` | `{"path":"a.txt"}`                          | `204` (no content) | `400`,`404`       |
+| `/files/move`   | `{"from":"a.txt","to":"b.txt"}`             | `201 {"from":..,"to":..}` | `400`,`404`       |
+
+Security: absolute paths and `..` traversal are rejected (`400`); symlinks that
+escape the sandbox are rejected; writes over 100MB return `413`.
+
 ## Auth modes
 
 | Mode  | Origin check      | Credential                     | Rate limit key |
@@ -78,6 +165,15 @@ MCP:
 - `POST /mcp/tools/call` — invoke a tool (stub in Phase 1)
 - `POST /mcp/resources/read` — read a resource (stub in Phase 1)
 - `GET /mcp/schema` — OpenAPI schema (stub in Phase 1)
+
+Tools (Phase 2):
+- `POST /search` — SearXNG-backed web/meta search (scoped to `search` token)
+- `POST /files/read|write|list|delete|move` — sandboxed file ops (scoped to
+  `files` token)
+
+In token mode, a token's `tool_id` scopes access: a token bound to `search`
+receives `403` on `/files/*` and vice-versa. A token with an empty `tool_id`
+(wildcard) may access any tool. In `none` (local) mode all tools are permitted.
 
 ## Database schema
 
@@ -106,4 +202,7 @@ Indexes: `idx_tools_status`, `idx_api_keys_token`, `idx_executions_tool`.
   a minimal Alpine runtime image (~15MB) running as a non-root user.
 - The `gateway healthcheck` subcommand backs the Docker `HEALTHCHECK`.
 - Tool services (`search`, `exec-light`, `files-server`, `browser`) are
-  placeholders in Phase 1 and gated behind the `tools` compose profile.
+  gated behind the `tools` compose profile. As of Phase 2, `search` (SearXNG)
+  and `files-server` (a stdlib Go sandbox server) have real Dockerfiles and
+  health checks; `exec-light` and `browser` remain placeholders. Tool ports
+  (8888, 8765) are internal-only and never published to the host.

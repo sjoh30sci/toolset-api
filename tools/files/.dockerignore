@@ -1,0 +1,3 @@
+# Ignore build artifacts; only source + go.mod are needed.
+*.md
+bin/

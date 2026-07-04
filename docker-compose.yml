@@ -33,19 +33,35 @@ services:
       start_period: 10s
 
   search:
+    build:
+      context: ./tools/search
+      dockerfile: Dockerfile
     image: toolset/search:latest
     container_name: toolset-search
     restart: unless-stopped
     profiles: ["tools"]
     env_file:
       - .env.local
+    environment:
+      # Generate a per-run secret. Override by setting SEARXNG_SECRET in .env.local
+      # (e.g. `openssl rand -hex 16`).
+      SEARXNG_SECRET: "${SEARXNG_SECRET:-changeme_run_openssl_rand_hex_16}"
+      SEARXNG_AUTOCOMPLETE_MIN: "0"
+      SEARXNG_ENABLE_METRICS: "false"
     volumes:
       - toolset-data:/data
       - toolset-logs:/logs
     networks:
       - toolset-network
-    # Placeholder: implemented in a later phase.
-    command: ["sleep", "infinity"]
+    # Internal only: port 8888 is NOT published to the host.
+    expose:
+      - "8888"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8888/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
   exec-light:
     image: toolset/exec-light:latest
@@ -63,19 +79,33 @@ services:
     command: ["sleep", "infinity"]
 
   files-server:
+    build:
+      context: ./tools/files
+      dockerfile: Dockerfile
     image: toolset/files-server:latest
     container_name: toolset-files-server
     restart: unless-stopped
     profiles: ["tools"]
     env_file:
       - .env.local
+    environment:
+      FILES_PORT: "8765"
+      FILES_SANDBOX_ROOT: "/data/files"
+      TOOLSET_LOG_LEVEL: "${TOOLSET_LOG_LEVEL:-info}"
     volumes:
       - toolset-data:/data
       - toolset-logs:/logs
     networks:
       - toolset-network
-    # Placeholder: sandboxed file operations added in a later phase.
-    command: ["sleep", "infinity"]
+    # Internal only: port 8765 is NOT published to the host.
+    expose:
+      - "8765"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8765/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
 
   browser:
     image: toolset/browser:latest
