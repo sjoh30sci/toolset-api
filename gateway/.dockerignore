@@ -1,0 +1,10 @@
+# Build context excludes
+bin/
+../bin/
+*.md
+.git/
+data/
+logs/
+*.db
+*.db-wal
+*.db-shm

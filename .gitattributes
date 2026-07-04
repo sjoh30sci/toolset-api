@@ -1,0 +1,11 @@
+# Normalize line endings to LF for cross-platform consistency.
+* text=auto eol=lf
+
+# Files that must stay LF regardless of platform.
+Makefile        text eol=lf
+*.sh            text eol=lf
+*.go            text eol=lf
+*.sql           text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+Dockerfile      text eol=lf

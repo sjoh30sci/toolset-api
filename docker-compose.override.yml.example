@@ -1,0 +1,42 @@
+# docker-compose.override.yml.example
+# Copy to docker-compose.override.yml (gitignored) to expose ports on your host
+# for local development. The base network is internal-only, so the override also
+# attaches services to a host-reachable bridge.
+
+services:
+  gateway:
+    ports:
+      - "8080:8080"
+    networks:
+      - toolset-network
+      - toolset-external
+
+  search:
+    profiles: []
+    networks:
+      - toolset-network
+      - toolset-external
+
+  exec-light:
+    profiles: []
+    networks:
+      - toolset-network
+
+  files-server:
+    profiles: []
+    networks:
+      - toolset-network
+
+  browser:
+    profiles: []
+    ports:
+      - "9222:9222"
+    networks:
+      - toolset-network
+      - toolset-external
+
+networks:
+  toolset-external:
+    name: toolset-external
+    driver: bridge
+    internal: false

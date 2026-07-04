@@ -1,0 +1,30 @@
+# Binaries & build artifacts
+bin/
+gateway/gateway
+gateway/gateway.exe
+cli/toolset
+cli/toolset.exe
+
+# Local environment & overrides
+.env.local
+docker-compose.override.yml
+
+# Runtime data & logs
+data/
+logs/
+*.db
+*.db-wal
+*.db-shm
+
+# Local config (keep the .example)
+config.yaml
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Go
+vendor/

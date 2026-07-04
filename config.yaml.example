@@ -1,0 +1,36 @@
+# config.yaml.example
+# Copy to config.yaml (gitignored) to customize. Environment variables
+# (TOOLSET_*) always override values defined here.
+
+server:
+  port: 8080
+  fallback_port: 18080
+  log_level: info  # debug | info | warn | error
+
+auth:
+  mode: none  # none | token
+  # Only used when mode: token. Each entry maps a logical tool -> bearer token.
+  api_tokens:
+    search: "sk_search_xxx"
+    exec: "sk_exec_xxx"
+  # Default requests/minute per token or IP.
+  rate_limit: 100
+
+db:
+  path: /data/toolset.db
+  max_connections: 10
+
+tools:
+  search:
+    enabled: true
+    container: search
+  files:
+    enabled: true
+    container: files-server
+    sandbox_root: /data/files
+  exec:
+    enabled: true
+    container: exec-light
+  browser:
+    enabled: true
+    container: browser

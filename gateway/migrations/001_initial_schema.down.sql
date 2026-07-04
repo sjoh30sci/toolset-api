@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS rate_limits;
+DROP TABLE IF EXISTS executions;
+DROP TABLE IF EXISTS api_keys;
+DROP TABLE IF EXISTS tools;

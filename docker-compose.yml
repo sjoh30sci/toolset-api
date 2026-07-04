@@ -1,0 +1,105 @@
+# docker-compose.yml
+# Toolset API - Phase 1 foundation
+# Local port mappings live in docker-compose.override.yml (gitignored).
+# Copy docker-compose.override.yml.example -> docker-compose.override.yml to expose ports.
+# Targets Compose Specification (formerly schema 3.9+); the `version` key is
+# intentionally omitted as it is obsolete in modern Docker Compose.
+
+services:
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    image: toolset/gateway:latest
+    container_name: toolset-gateway
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    environment:
+      TOOLSET_PORT: "8080"
+      TOOLSET_AUTH_MODE: "${TOOLSET_AUTH_MODE:-none}"
+      TOOLSET_LOG_LEVEL: "${TOOLSET_LOG_LEVEL:-info}"
+      TOOLSET_DB_PATH: "/data/toolset.db"
+    volumes:
+      - toolset-data:/data
+      - toolset-logs:/logs
+    networks:
+      - toolset-network
+    healthcheck:
+      test: ["CMD", "/app/gateway", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  search:
+    image: toolset/search:latest
+    container_name: toolset-search
+    restart: unless-stopped
+    profiles: ["tools"]
+    env_file:
+      - .env.local
+    volumes:
+      - toolset-data:/data
+      - toolset-logs:/logs
+    networks:
+      - toolset-network
+    # Placeholder: implemented in a later phase.
+    command: ["sleep", "infinity"]
+
+  exec-light:
+    image: toolset/exec-light:latest
+    container_name: toolset-exec-light
+    restart: unless-stopped
+    profiles: ["tools"]
+    env_file:
+      - .env.local
+    volumes:
+      - toolset-data:/data
+      - toolset-logs:/logs
+    networks:
+      - toolset-network
+    # Placeholder: nsjail-based sandbox added in a later phase.
+    command: ["sleep", "infinity"]
+
+  files-server:
+    image: toolset/files-server:latest
+    container_name: toolset-files-server
+    restart: unless-stopped
+    profiles: ["tools"]
+    env_file:
+      - .env.local
+    volumes:
+      - toolset-data:/data
+      - toolset-logs:/logs
+    networks:
+      - toolset-network
+    # Placeholder: sandboxed file operations added in a later phase.
+    command: ["sleep", "infinity"]
+
+  browser:
+    image: toolset/browser:latest
+    container_name: toolset-browser
+    restart: unless-stopped
+    profiles: ["tools"]
+    env_file:
+      - .env.local
+    volumes:
+      - toolset-data:/data
+      - toolset-logs:/logs
+    networks:
+      - toolset-network
+    # Placeholder: Playwright automation added in a later phase.
+    command: ["sleep", "infinity"]
+
+volumes:
+  toolset-data:
+    name: toolset-data
+  toolset-logs:
+    name: toolset-logs
+
+networks:
+  toolset-network:
+    name: toolset-network
+    driver: bridge
+    internal: true
