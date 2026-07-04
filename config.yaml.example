@@ -62,3 +62,15 @@ exec:
   languages:
     light: [python, node, bash, c, cpp, assembly]
     heavy: [dotnet, java, rust, csharp]
+
+# Phase 4 browser-automation settings. Consumed by the gateway to route
+# /browser/* requests to the Playwright service and by the service itself
+# (via container env vars) to size the session pool.
+browser:
+  enabled: true
+  max_sessions: 10
+  session_timeout_minutes: 30
+  browsers:
+    chromium: true
+    firefox: true
+    webkit: false  # Smaller image / faster launch if disabled

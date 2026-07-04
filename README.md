@@ -23,6 +23,17 @@ operations, browser automation) to local AI agents over REST and
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for details.
 
+## Features
+
+- **Search** — web/meta search via SearXNG.
+- **Files** — sandboxed read/write/list/delete/move.
+- **Exec** — sandboxed code execution across 9+ language runtimes (sync + async).
+- **Browser** — Playwright automation: sessions, DOM actions, screenshots, PDF
+  export, multi-browser (Chromium/Firefox/WebKit). See
+  [docs/BROWSER_API.md](docs/BROWSER_API.md).
+- **MCP** — full Model Context Protocol compliance (`2024-11-05`). See
+  [docs/MCP_SPEC.md](docs/MCP_SPEC.md).
+
 ## Quick start
 
 ```bash

@@ -149,6 +149,13 @@ func run() error {
 	execGroup.GET("/:id", h.ExecStatus)
 	execGroup.DELETE("/:id", h.ExecCancel)
 
+	// Browser automation (scoped to the "browser" tool token in token mode).
+	browserGroup := api.Group("/browser", authn.RequireTool("browser"))
+	browserGroup.POST("/session", h.BrowserSessionCreate)
+	browserGroup.GET("/session/:id", h.BrowserSessionGet)
+	browserGroup.DELETE("/session/:id", h.BrowserSessionDelete)
+	browserGroup.POST("/action", h.BrowserAction)
+
 	api.POST("/mcp/initialize", h.MCPInitialize)
 	api.POST("/mcp/tools/list", h.MCPToolsList)
 	api.POST("/mcp/tools/call", h.MCPToolsCall)

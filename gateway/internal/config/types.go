@@ -4,11 +4,12 @@ package config
 // Config is the top-level configuration for the gateway. It is populated from
 // (in increasing priority): defaults -> config.yaml -> environment variables.
 type Config struct {
-	Server ServerConfig          `yaml:"server"`
-	Auth   AuthConfig            `yaml:"auth"`
-	DB     DBConfig              `yaml:"db"`
-	Tools  map[string]ToolConfig `yaml:"tools"`
-	Exec   ExecConfig            `yaml:"exec"`
+	Server  ServerConfig          `yaml:"server"`
+	Auth    AuthConfig            `yaml:"auth"`
+	DB      DBConfig              `yaml:"db"`
+	Tools   map[string]ToolConfig `yaml:"tools"`
+	Exec    ExecConfig            `yaml:"exec"`
+	Browser BrowserConfig         `yaml:"browser"`
 }
 
 // ServerConfig holds HTTP server settings.
@@ -57,6 +58,14 @@ const (
 	AuthModeToken = "token"
 )
 
+// BrowserConfig controls the Phase 4 browser-automation feature.
+type BrowserConfig struct {
+	Enabled               bool            `yaml:"enabled"`
+	MaxSessions           int             `yaml:"max_sessions"`
+	SessionTimeoutMinutes int             `yaml:"session_timeout_minutes"`
+	Browsers              map[string]bool `yaml:"browsers"`
+}
+
 // Defaults returns a Config populated with sensible defaults.
 func Defaults() Config {
 	return Config{
@@ -84,6 +93,16 @@ func Defaults() Config {
 			Languages: map[string][]string{
 				"light": {"python", "node", "bash", "c", "cpp", "assembly"},
 				"heavy": {"dotnet", "java", "rust", "csharp"},
+			},
+		},
+		Browser: BrowserConfig{
+			Enabled:               true,
+			MaxSessions:           10,
+			SessionTimeoutMinutes: 30,
+			Browsers: map[string]bool{
+				"chromium": true,
+				"firefox":  true,
+				"webkit":   false,
 			},
 		},
 	}

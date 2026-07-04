@@ -152,19 +152,34 @@ services:
       start_period: 5s
 
   browser:
+    build:
+      context: ./tools/browser
+      dockerfile: Dockerfile
     image: toolset/browser:latest
     container_name: toolset-browser
     restart: unless-stopped
     profiles: ["tools"]
     env_file:
       - .env.local
+    environment:
+      CI: "true"
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "0"
+      BROWSER_MAX_SESSIONS: "${BROWSER_MAX_SESSIONS:-10}"
+      BROWSER_SESSION_TIMEOUT_MINUTES: "${BROWSER_SESSION_TIMEOUT_MINUTES:-30}"
     volumes:
       - toolset-data:/data
       - toolset-logs:/logs
     networks:
       - toolset-network
-    # Placeholder: Playwright automation added in a later phase.
-    command: ["sleep", "infinity"]
+    # Internal only: port 3000 is NOT published to the host.
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
   toolset-data:

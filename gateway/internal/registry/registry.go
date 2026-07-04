@@ -179,6 +179,13 @@ func DefaultTools() []Tool {
 			HealthCheckURL: "http://exec-heavy:8765/health",
 			ContainerName:  "toolset-exec-heavy",
 		},
+		{
+			Name:           "browser",
+			Description:    "Playwright browser automation: sessions, DOM actions, screenshots, PDF",
+			Category:       "browser",
+			HealthCheckURL: "http://browser:3000/health",
+			ContainerName:  "toolset-browser",
+		},
 	}
 }
 
