@@ -165,6 +165,20 @@ func DefaultTools() []Tool {
 			HealthCheckURL: "http://files-server:8765/health",
 			ContainerName:  "toolset-files-server",
 		},
+		{
+			Name:           "exec-light",
+			Description:    "Sandboxed code execution: python, node, bash, c, cpp, assembly",
+			Category:       "exec",
+			HealthCheckURL: "http://exec-light:8765/health",
+			ContainerName:  "toolset-exec-light",
+		},
+		{
+			Name:           "exec-heavy",
+			Description:    "Sandboxed code execution: dotnet/csharp, java, rust",
+			Category:       "exec",
+			HealthCheckURL: "http://exec-heavy:8765/health",
+			ContainerName:  "toolset-exec-heavy",
+		},
 	}
 }
 

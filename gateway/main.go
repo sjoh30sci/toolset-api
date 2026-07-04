@@ -19,7 +19,9 @@ import (
 	"github.com/yourusername/toolset-api/gateway/internal/auth"
 	"github.com/yourusername/toolset-api/gateway/internal/config"
 	"github.com/yourusername/toolset-api/gateway/internal/db"
+	"github.com/yourusername/toolset-api/gateway/internal/executor"
 	"github.com/yourusername/toolset-api/gateway/internal/handlers"
+	"github.com/yourusername/toolset-api/gateway/internal/queue"
 	"github.com/yourusername/toolset-api/gateway/internal/registry"
 )
 
@@ -86,6 +88,28 @@ func run() error {
 
 	h := handlers.New(reg, Version)
 
+	// --- Phase 3: code execution wiring -------------------------------------
+	execClient := executor.NewClient()
+	execClient.LightEnabled = cfg.Exec.LightEnabled
+	execClient.HeavyEnabled = cfg.Exec.HeavyEnabled
+	execQueue := executor.NewQueue(database.DB)
+
+	h.Exec = execClient
+	h.Queue = execQueue
+	if t, ok, err := reg.GetByName(context.Background(), "exec-light"); err == nil && ok {
+		h.ExecToolID = t.ID
+	}
+
+	// Background worker pool drains the async job queue.
+	worker := queue.NewWorker(queue.Config{
+		Queue:   execQueue,
+		Runner:  execClient,
+		Logger:  logger,
+		Workers: cfg.Exec.QueueWorkers,
+	})
+	worker.Start(context.Background())
+	defer worker.Stop()
+
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
@@ -117,6 +141,13 @@ func run() error {
 	files.POST("/list", h.FilesList)
 	files.POST("/delete", h.FilesDelete)
 	files.POST("/move", h.FilesMove)
+
+	// Code execution (scoped to the "exec" tool token in token mode).
+	execGroup := api.Group("/exec", authn.RequireTool("exec"))
+	execGroup.POST("", h.ExecSync)
+	execGroup.POST("/async", h.ExecAsync)
+	execGroup.GET("/:id", h.ExecStatus)
+	execGroup.DELETE("/:id", h.ExecCancel)
 
 	api.POST("/mcp/initialize", h.MCPInitialize)
 	api.POST("/mcp/tools/list", h.MCPToolsList)

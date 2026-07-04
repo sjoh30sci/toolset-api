@@ -7,6 +7,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/yourusername/toolset-api/gateway/internal/executor"
 	"github.com/yourusername/toolset-api/gateway/internal/registry"
 )
 
@@ -15,6 +16,14 @@ type Handlers struct {
 	Registry *registry.Registry
 	Version  string
 	Started  time.Time
+
+	// Exec is the sandbox client used by the /exec endpoints (optional; nil
+	// disables synchronous execution).
+	Exec *executor.Client
+	// Queue backs the async /exec endpoints (optional; nil disables async).
+	Queue *executor.Queue
+	// ExecToolID is the registry ID of the exec tool, stamped onto jobs.
+	ExecToolID string
 }
 
 // New creates a Handlers instance.

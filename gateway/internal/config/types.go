@@ -8,6 +8,7 @@ type Config struct {
 	Auth   AuthConfig            `yaml:"auth"`
 	DB     DBConfig              `yaml:"db"`
 	Tools  map[string]ToolConfig `yaml:"tools"`
+	Exec   ExecConfig            `yaml:"exec"`
 }
 
 // ServerConfig holds HTTP server settings.
@@ -40,6 +41,16 @@ type ToolConfig struct {
 	SandboxRoot string `yaml:"sandbox_root,omitempty"`
 }
 
+// ExecConfig controls the Phase 3 code-execution feature.
+type ExecConfig struct {
+	LightEnabled   bool                `yaml:"light_enabled"`
+	HeavyEnabled   bool                `yaml:"heavy_enabled"`
+	DefaultTimeout int                 `yaml:"default_timeout"`
+	MaxTimeout     int                 `yaml:"max_timeout"`
+	QueueWorkers   int                 `yaml:"queue_workers"`
+	Languages      map[string][]string `yaml:"languages"`
+}
+
 // Auth modes.
 const (
 	AuthModeNone  = "none"
@@ -64,5 +75,16 @@ func Defaults() Config {
 			MaxConnections: 10,
 		},
 		Tools: map[string]ToolConfig{},
+		Exec: ExecConfig{
+			LightEnabled:   true,
+			HeavyEnabled:   false,
+			DefaultTimeout: 30,
+			MaxTimeout:     300,
+			QueueWorkers:   2,
+			Languages: map[string][]string{
+				"light": {"python", "node", "bash", "c", "cpp", "assembly"},
+				"heavy": {"dotnet", "java", "rust", "csharp"},
+			},
+		},
 	}
 }

@@ -18,6 +18,7 @@ func (h *Handlers) Root(c echo.Context) error {
 			"tools":     "GET /tools",
 			"search":    "POST /search",
 			"files":     "POST /files/read, /files/write, /files/list, /files/delete, /files/move",
+			"exec":      "POST /exec, POST /exec/async, GET /exec/{id}, DELETE /exec/{id}",
 			"mcp":       "POST /mcp/initialize, /mcp/tools/list, /mcp/tools/call, /mcp/resources/read",
 			"mcpSchema": "GET /mcp/schema",
 		},

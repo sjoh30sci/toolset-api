@@ -50,3 +50,15 @@ files:
   enabled: true
   sandbox_root: /data/files
   max_file_size: 104857600   # 100MB, in bytes
+
+# Phase 3 code-execution settings. Consumed by the gateway to route requests to
+# the exec-light / exec-heavy sandbox containers and to size the async worker pool.
+exec:
+  light_enabled: true
+  heavy_enabled: false  # Disable if you don't need .NET/Java/Rust
+  default_timeout: 30
+  max_timeout: 300
+  queue_workers: 2
+  languages:
+    light: [python, node, bash, c, cpp, assembly]
+    heavy: [dotnet, java, rust, csharp]
