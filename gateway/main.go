@@ -21,6 +21,7 @@ import (
 	"github.com/yourusername/toolset-api/gateway/internal/db"
 	"github.com/yourusername/toolset-api/gateway/internal/executor"
 	"github.com/yourusername/toolset-api/gateway/internal/handlers"
+	"github.com/yourusername/toolset-api/gateway/internal/openapi"
 	"github.com/yourusername/toolset-api/gateway/internal/queue"
 	"github.com/yourusername/toolset-api/gateway/internal/registry"
 )
@@ -32,6 +33,12 @@ func main() {
 	// Support a lightweight `gateway healthcheck` subcommand for Docker.
 	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
 		os.Exit(runHealthcheck())
+	}
+
+	// Emit the OpenAPI spec to stdout for SDK generation, then exit.
+	// Usage: gateway --openapi-spec > openapi.json
+	if len(os.Args) > 1 && os.Args[1] == "--openapi-spec" {
+		os.Exit(runOpenAPISpec())
 	}
 
 	if err := run(); err != nil {
@@ -269,6 +276,20 @@ func requestLogger(logger *slog.Logger) echo.MiddlewareFunc {
 			return err
 		}
 	}
+}
+
+// runOpenAPISpec writes the generated OpenAPI 3.0 spec to stdout. The spec's
+// advertised version tracks the build Version so generated SDKs are versioned
+// consistently with releases.
+func runOpenAPISpec() int {
+	openapi.Version = Version
+	data, err := openapi.JSON()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "openapi spec generation failed:", err)
+		return 1
+	}
+	fmt.Println(string(data))
+	return 0
 }
 
 // runHealthcheck performs an in-process health probe used by Docker HEALTHCHECK.

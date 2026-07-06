@@ -1,0 +1,80 @@
+# .goreleaser.yml — cross-platform release automation for the toolset CLI.
+#
+# NOTE: The Go module path in this repo is github.com/yourusername/toolset-api
+# (see cli/go.mod). The ldflags below inject version metadata into the CLI's
+# main package (var Version in cli/main.go). If/when the module is renamed to a
+# real GitHub owner, update the module path here and in the go.mod files.
+#
+# Validate locally with:  goreleaser check
+# Dry-run a build with:   goreleaser release --snapshot --clean
+version: 2
+
+env:
+  - GO111MODULE=on
+
+builds:
+  - id: toolset-cli
+    dir: cli
+    main: .
+    binary: toolset
+    env:
+      # Static binary, no CGO. The CLI only shells out to docker-compose and
+      # makes HTTP calls, so it does not need cgo (unlike the gateway, which
+      # links go-sqlite3).
+      - CGO_ENABLED=0
+    goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      # Windows on arm64 is uncommon for this tool; skip to keep the matrix lean.
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.Version={{ .Version }}
+      - -X main.BuildDate={{ .Date }}
+      - -X main.GitCommit={{ .Commit }}
+
+archives:
+  - id: toolset-archive
+    name_template: "toolset_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE
+      - src: docs/**/*
+      - config.yaml.example
+      - docker-compose.yml
+      - docker-compose.override.yml.example
+      - .env.example
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+release:
+  github:
+    owner: yourusername
+    repo: toolset-api
+  prerelease: auto
+  draft: false
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - "^test:"
+      - "^chore"
+      - "^docs:"
+      - "Merge pull request"

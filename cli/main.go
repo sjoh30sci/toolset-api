@@ -14,8 +14,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Version is injected at build time via -ldflags "-X main.Version=...".
-var Version = "dev"
+// Version, BuildDate, and GitCommit are injected at build time via
+// -ldflags "-X main.Version=... -X main.BuildDate=... -X main.GitCommit=...".
+var (
+	Version   = "dev"
+	BuildDate = "unknown"
+	GitCommit = "none"
+)
 
 func main() {
 	if err := rootCmd().Execute(); err != nil {
@@ -30,7 +35,8 @@ func rootCmd() *cobra.Command {
 		Short:   "Manage the Toolset API stack",
 		Version: Version,
 	}
-	root.AddCommand(initCmd(), upCmd(), downCmd(), logsCmd(), statusCmd())
+	root.SetVersionTemplate(fmt.Sprintf("toolset %s (commit %s, built %s)\n", Version, GitCommit, BuildDate))
+	root.AddCommand(initCmd(), upCmd(), downCmd(), logsCmd(), statusCmd(), packageCmd())
 	return root
 }
 

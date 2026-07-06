@@ -1,0 +1,53 @@
+name: Test & Build
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - name: Run gateway unit tests
+        run: make test
+      - name: Run e2e smoke test
+        run: make test-e2e
+        continue-on-error: true # E2E needs a full Docker stack, not always present in CI
+      - name: Build CLI
+        run: make build-cli
+      - name: Build gateway
+        run: make build
+
+  openapi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - name: Generate OpenAPI spec
+        working-directory: gateway
+        run: go run . --openapi-spec > openapi.json
+      - name: Validate OpenAPI JSON
+        run: |
+          python -c "import json,sys; json.load(open('gateway/openapi.json')); print('openapi.json is valid JSON')"
+      - name: Upload spec artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-spec
+          path: gateway/openapi.json
+
+  docker-build:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build all images
+        run: make docker-build

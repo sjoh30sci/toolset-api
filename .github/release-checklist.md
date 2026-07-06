@@ -1,0 +1,21 @@
+# Release Checklist v0.1.0
+
+- [ ] Update version in:
+  - `gateway/main.go` (or rely on `-ldflags -X main.Version` from the tag)
+  - `cli/main.go` (or rely on `-ldflags -X main.Version` from the tag)
+  - `gateway/internal/openapi/openapi.go` (`Version` default)
+  - `sdk/ts/package.json`
+  - `sdk/py/setup.py`
+  - `docs/QUICKSTART.md`
+- [ ] Update `CHANGELOG.md` with new features/fixes
+- [ ] Run `gofmt -l -e ./...` — clean
+- [ ] Run `make test` — all pass
+- [ ] Run `make build-cli` and `make build` — succeed
+- [ ] Run `make docker-build` — all images build
+- [ ] Validate release config: `goreleaser check`
+- [ ] Tag commit: `git tag -a v0.1.0 -m "Release v0.1.0"`
+- [ ] Push tag: `git push origin v0.1.0`
+- [ ] Wait for the `Release` GitHub Actions workflow to complete
+- [ ] Verify the release + checksums appear on GitHub Releases
+- [ ] Download and smoke-test the binary for your platform
+- [ ] Verify npm (`@yourusername/toolset-api`) and PyPI (`toolset-api`) packages published

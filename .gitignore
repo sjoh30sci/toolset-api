@@ -28,3 +28,16 @@ Thumbs.db
 
 # Go
 vendor/
+
+# Phase 5: distribution & SDK generation artifacts
+gateway/openapi.json
+sdk/ts/node_modules/
+sdk/ts/dist/
+sdk/ts/generated/
+sdk/py/generated/
+sdk/py/dist/
+sdk/py/build/
+sdk/py/*.egg-info/
+dist/
+toolset-*.tar.gz
+toolset-latest.tar.gz

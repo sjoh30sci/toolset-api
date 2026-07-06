@@ -1,0 +1,33 @@
+{
+  "name": "@yourusername/toolset-api",
+  "version": "0.1.0",
+  "description": "TypeScript client for the Toolset API (search, files, exec, browser, MCP)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/toolset-api.git"
+  },
+  "keywords": [
+    "toolset",
+    "api",
+    "mcp",
+    "ai-agents"
+  ],
+  "author": "yourusername",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

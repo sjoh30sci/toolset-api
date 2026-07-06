@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  sdk-generate:
+    runs-on: ubuntu-latest
+    needs: release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Generate OpenAPI spec
+        working-directory: gateway
+        run: go run . --openapi-spec > openapi.json
+
+      # openapi-generator-cli is distributed as a Docker image and a npm package.
+      # Using the Docker image keeps the toolchain pinned and reproducible.
+      - name: Generate TypeScript SDK
+        run: |
+          docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v7.6.0 generate \
+            -i /local/gateway/openapi.json \
+            -g typescript-axios \
+            -o /local/sdk/ts/generated \
+            --additional-properties=npmName=@yourusername/toolset-api,supportsES6=true
+
+      - name: Publish TypeScript SDK
+        working-directory: sdk/ts
+        run: |
+          npm ci || npm install
+          npm run build
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        continue-on-error: true # Skip if NPM_TOKEN is not configured
+
+      - name: Generate Python SDK
+        run: |
+          docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v7.6.0 generate \
+            -i /local/gateway/openapi.json \
+            -g python \
+            -o /local/sdk/py/generated \
+            --additional-properties=packageName=toolset_api
+
+      - name: Publish Python SDK
+        working-directory: sdk/py
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build
+          twine upload dist/*
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        continue-on-error: true # Skip if PYPI_TOKEN is not configured
