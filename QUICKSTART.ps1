@@ -1,309 +1,153 @@
-<#
-.SYNOPSIS
-    Toolset API - Quick Start Setup (Windows / PowerShell)
+﻿# Toolset API - Quick Start Setup (Windows PowerShell)
+# Usage: powershell -ExecutionPolicy Bypass -File QUICKSTART.ps1
 
-.DESCRIPTION
-    Automates the local setup of the Toolset API project:
-      1. Checks prerequisites (Docker, Docker Compose, Git)
-      2. Copies example files if they don't already exist
-      3. Builds all Docker images
-      4. Starts the stack
-      5. Waits for services to become healthy
-      6. Runs basic smoke tests
-
-.NOTES
-    Run from the project root directory:
-      powershell -ExecutionPolicy Bypass -File QUICKSTART.ps1
-
-    Requires PowerShell 5.1 or later.
-#>
-
-#Requires -Version 5.1
-
-$ErrorActionPreference = "Stop"
-$InformationPreference = "Continue"
-
-# ── Helper functions ─────────────────────────────────────────────────────────
-
-function Write-Info {
-    param([string]$Message)
-    Write-Host "ℹ $Message" -ForegroundColor Cyan
-}
-
-function Write-OK {
-    param([string]$Message)
-    Write-Host "✓ $Message" -ForegroundColor Green
-}
-
-function Write-Warn {
-    param([string]$Message)
-    Write-Host "⚠ $Message" -ForegroundColor Yellow
-}
-
-function Write-Err {
-    param([string]$Message)
-    Write-Host "✗ $Message" -ForegroundColor Red
-}
-
-# ── Banner ───────────────────────────────────────────────────────────────────
-
-Write-Host ""
-Write-Host "🚀 Toolset API - Quick Start Setup (Windows)" -ForegroundColor Green
+Write-Host "Toolset API - Quick Start Setup (Windows)" -ForegroundColor Green
 Write-Host "============================================" -ForegroundColor Green
 Write-Host ""
 
-# ── Step 1: Check prerequisites ──────────────────────────────────────────────
+# Check prerequisites
+Write-Host "Checking prerequisites..." -ForegroundColor Green
 
-Write-Host "Step 1: Checking prerequisites..." -ForegroundColor Green
-Write-Host ""
+$dockerExists = $false
+$composeExists = $false
 
-$prereqOk = $true
-
-# Check Docker
 try {
-    $dockerVersion = docker --version 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        Write-OK "Docker: $dockerVersion"
-    } else {
-        throw "Docker not found"
-    }
+  docker --version | Out-Null
+  $dockerExists = $true
 } catch {
-    Write-Err "Docker not found. Please install Docker Desktop from https://www.docker.com/products/docker-desktop/"
-    $prereqOk = $false
+  Write-Host "Docker not found. Please install Docker Desktop." -ForegroundColor Red
+  exit 1
 }
 
-# Check Docker Compose
 try {
-    $composeVersion = docker-compose --version 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        Write-OK "Docker Compose: $composeVersion"
-    } else {
-        throw "Docker Compose not found"
-    }
+  docker-compose --version | Out-Null
+  $composeExists = $true
 } catch {
-    # Check for Docker Compose V2 (plugin)
-    try {
-        $composeV2Version = docker compose version 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            Write-OK "Docker Compose (V2 plugin): $composeV2Version"
-        } else {
-            throw "Docker Compose V2 not found"
-        }
-    } catch {
-        Write-Err "Docker Compose not found. Docker Desktop includes Compose."
-        $prereqOk = $false
-    }
+  Write-Host "Docker Compose not found." -ForegroundColor Red
+  exit 1
 }
 
-# Check Git
-try {
-    $gitVersion = git --version 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        Write-OK "Git: $gitVersion"
-    } else {
-        throw "Git not found"
-    }
-} catch {
-    Write-Err "Git not found. Please install Git from https://git-scm.com/downloads"
-    $prereqOk = $false
-}
-
+Write-Host "  Docker: $(docker --version)"
+Write-Host "  Docker Compose: $(docker-compose --version)"
 Write-Host ""
 
-if (-not $prereqOk) {
-    Write-Err "Please install missing prerequisites and re-run this script."
-    exit 1
-}
+# Prepare environment
+Write-Host "Preparing environment..." -ForegroundColor Green
 
-# Check Docker daemon is running
-try {
-    $null = docker info 2>&1
-    Write-OK "Docker daemon is running."
-} catch {
-    Write-Err "Docker daemon is not running. Please start Docker Desktop and try again."
-    exit 1
-}
-
-Write-Host ""
-
-# ── Step 2: Prepare environment ──────────────────────────────────────────────
-
-Write-Host "Step 2: Preparing environment files..." -ForegroundColor Green
-Write-Host ""
-
-$projectRoot = Get-Location
-
-# .env.local
-$envLocal = Join-Path $projectRoot ".env.local"
-$envExample = Join-Path $projectRoot ".env.example"
-if (-not (Test-Path $envLocal)) {
-    if (Test-Path $envExample) {
-        Copy-Item $envExample $envLocal
-        Write-OK "Created .env.local from .env.example"
-    } else {
-        Write-Err ".env.example not found. Are you in the project root?"
-        exit 1
-    }
+if (-not (Test-Path ".env.local")) {
+  Copy-Item ".env.example" ".env.local"
+  Write-Host "  Created .env.local"
 } else {
-    Write-Info ".env.local already exists — skipping"
+  Write-Host "  .env.local already exists (skipping)"
 }
 
-# docker-compose.override.yml
-$overrideYml = Join-Path $projectRoot "docker-compose.override.yml"
-$overrideExample = Join-Path $projectRoot "docker-compose.override.yml.example"
-if (-not (Test-Path $overrideYml)) {
-    if (Test-Path $overrideExample) {
-        Copy-Item $overrideExample $overrideYml
-        Write-OK "Created docker-compose.override.yml from docker-compose.override.yml.example"
-    } else {
-        Write-Warn "docker-compose.override.yml.example not found — skipping"
-    }
+if (-not (Test-Path "docker-compose.override.yml")) {
+  Copy-Item "docker-compose.override.yml.example" "docker-compose.override.yml"
+  Write-Host "  Created docker-compose.override.yml"
 } else {
-    Write-Info "docker-compose.override.yml already exists — skipping"
+  Write-Host "  docker-compose.override.yml already exists (skipping)"
 }
 
-# config.yaml
-$configYaml = Join-Path $projectRoot "config.yaml"
-$configExample = Join-Path $projectRoot "config.yaml.example"
-if (-not (Test-Path $configYaml)) {
-    if (Test-Path $configExample) {
-        Copy-Item $configExample $configYaml
-        Write-OK "Created config.yaml from config.yaml.example"
-    } else {
-        Write-Warn "config.yaml.example not found — skipping"
-    }
+if (-not (Test-Path "config.yaml")) {
+  Copy-Item "config.yaml.example" "config.yaml"
+  Write-Host "  Created config.yaml"
 } else {
-    Write-Info "config.yaml already exists — skipping"
+  Write-Host "  config.yaml already exists (skipping)"
 }
 
 Write-Host ""
 
-# ── Step 3: Create required directories ──────────────────────────────────────
-
-if (-not (Test-Path (Join-Path $projectRoot "data"))) {
-    New-Item -ItemType Directory -Path (Join-Path $projectRoot "data") | Out-Null
-    Write-OK "Created data/ directory"
-}
-if (-not (Test-Path (Join-Path $projectRoot "logs"))) {
-    New-Item -ItemType Directory -Path (Join-Path $projectRoot "logs") | Out-Null
-    Write-OK "Created logs/ directory"
-}
-
+# Build images
+Write-Host "Building Docker images..." -ForegroundColor Green
+Write-Host "  (This may take 5-10 minutes on first run)"
 Write-Host ""
 
-# ── Step 4: Build Docker images ──────────────────────────────────────────────
+docker-compose build
 
-Write-Host "Step 3: Building Docker images..." -ForegroundColor Green
-Write-Host "  (This may take 5-10 minutes on first run)" -ForegroundColor Yellow
-Write-Host ""
-
-$buildResult = docker-compose build 2>&1
-if ($LASTEXITCODE -eq 0) {
-    Write-OK "Docker images built successfully."
-} else {
-    Write-Err "Docker build failed. Check the output above."
-    Write-Err "Common issues: insufficient disk space, Docker daemon not running."
-    exit 1
+if ($LASTEXITCODE -ne 0) {
+  Write-Host "Docker build failed. Check the output above." -ForegroundColor Red
+  exit 1
 }
 
 Write-Host ""
 
-# ── Step 5: Start services ───────────────────────────────────────────────────
+# Start services
+Write-Host "Starting services..." -ForegroundColor Green
+docker-compose up -d
 
-Write-Host "Step 4: Starting services..." -ForegroundColor Green
-Write-Host ""
-
-$upResult = docker-compose up -d 2>&1
-if ($LASTEXITCODE -eq 0) {
-    Write-OK "Services started."
-} else {
-    Write-Err "Failed to start services. Check the output above."
-    exit 1
+if ($LASTEXITCODE -ne 0) {
+  Write-Host "Failed to start services." -ForegroundColor Red
+  exit 1
 }
 
 Write-Host ""
 
-# ── Step 6: Wait for health ──────────────────────────────────────────────────
+# Wait for health checks
+Write-Host "Waiting for services to be ready (this may take 30-60 seconds)..." -ForegroundColor Green
 
-Write-Host "Step 5: Waiting for services to become healthy..." -ForegroundColor Green
-Write-Host ""
-
-$healthUrl = "http://localhost:8080/health"
-$maxRetries = 30
-$retryInterval = 3
 $ready = $false
+$maxRetries = 60
 
 for ($i = 1; $i -le $maxRetries; $i++) {
-    try {
-        $response = Invoke-WebRequest -Uri $healthUrl -UseBasicParsing -ErrorAction SilentlyContinue
-        if ($response.StatusCode -eq 200) {
-            Write-OK "All services are healthy! (attempt $i)"
-            $ready = $true
-            break
-        }
-    } catch {
-        # Not ready yet — continue
+  try {
+    $response = Invoke-WebRequest -Uri "http://localhost:8080/health" -UseBasicParsing -ErrorAction Stop
+    if ($response.StatusCode -eq 200) {
+      Write-Host "  All services are healthy!" -ForegroundColor Green
+      $ready = $true
+      break
     }
-    Write-Host "  Waiting... ($i/$maxRetries)"
-    Start-Sleep -Seconds $retryInterval
+  } catch {
+    # Not ready yet
+  }
+
+  Write-Host "  Waiting... ($i/$maxRetries)" -ForegroundColor Yellow
+  Start-Sleep -Seconds 1
 }
 
 if (-not $ready) {
-    Write-Warn "Services not fully healthy after $maxRetries attempts."
-    Write-Warn "Continuing anyway — check logs: docker-compose logs gateway"
+  Write-Host "  Services did not become healthy in time." -ForegroundColor Yellow
+  Write-Host "  Try: docker-compose logs gateway" -ForegroundColor Yellow
 }
 
 Write-Host ""
 
-# ── Step 7: Verify services ──────────────────────────────────────────────────
-
-Write-Host "Step 6: Verifying services..." -ForegroundColor Green
-Write-Host ""
-
+# Verify services
+Write-Host "Service status:" -ForegroundColor Green
 docker-compose ps
 Write-Host ""
 
-# ── Step 8: Smoke tests ──────────────────────────────────────────────────────
-
-Write-Host "Step 7: Running smoke tests..." -ForegroundColor Green
+# Test endpoints
+Write-Host "Testing endpoints..." -ForegroundColor Green
 Write-Host ""
 
-# Test /health
-Write-Host "  Testing /health..."
+Write-Host "  Testing /health..." -ForegroundColor Yellow
 try {
-    $healthResponse = Invoke-WebRequest -Uri $healthUrl -UseBasicParsing
-    $healthJson = $healthResponse.Content | ConvertFrom-Json
-    Write-Host "  Status: $($healthJson.status)"
-    Write-Host "  Version: $($healthJson.version)"
+  $health = Invoke-WebRequest -Uri "http://localhost:8080/health" -UseBasicParsing | ConvertFrom-Json
+  Write-Host "    Status: $($health.status)" -ForegroundColor Green
 } catch {
-    Write-Warn "  Health endpoint unreachable at $healthUrl"
+  Write-Host "    Could not reach /health endpoint" -ForegroundColor Yellow
 }
+
 Write-Host ""
 
-# Test /exec (Python)
-Write-Host "  Testing /exec (Python)..."
+Write-Host "  Testing /exec (Python)..." -ForegroundColor Yellow
 try {
-    $execBody = '{"code": "print(\"Toolset API is running!\")", "language": "python", "timeout": 10}'
-    $execResponse = Invoke-WebRequest -Uri "http://localhost:8080/exec" -Method Post `
-        -Headers @{"Content-Type" = "application/json"} `
-        -Body $execBody `
-        -UseBasicParsing
-    $execJson = $execResponse.Content | ConvertFrom-Json
-    if ($execJson.stdout) {
-        Write-OK "Execution output: $($execJson.stdout)"
-    } elseif ($execJson.error) {
-        Write-Warn "Execution error: $($execJson.error)"
-    } else {
-        Write-Host "  Response: $($execResponse.Content)"
-    }
+  $execResponse = Invoke-WebRequest -Uri "http://localhost:8080/exec" `
+    -Method Post `
+    -Headers @{"Content-Type"="application/json"} `
+    -Body '{"code":"print(\"Toolset API is running!\")", "language":"python", "timeout":10}' `
+    -UseBasicParsing -ErrorAction Stop
+
+  $exec = $execResponse.Content | ConvertFrom-Json
+  Write-Host "    Output: $($exec.stdout)" -ForegroundColor Green
 } catch {
-    Write-Warn "  Exec endpoint unreachable (services may still be starting)"
+  Write-Host "    Could not reach /exec endpoint" -ForegroundColor Yellow
 }
+
 Write-Host ""
 
-# ── Done ─────────────────────────────────────────────────────────────────────
-
-Write-Host "✅ Setup complete!" -ForegroundColor Green
+# Success message
+Write-Host "Setup complete!" -ForegroundColor Green
 Write-Host ""
 Write-Host "Available endpoints:" -ForegroundColor Cyan
 Write-Host "  - Web search:        POST http://localhost:8080/search"
@@ -311,11 +155,9 @@ Write-Host "  - File operations:   POST http://localhost:8080/files/{read,write,
 Write-Host "  - Code execution:    POST http://localhost:8080/exec"
 Write-Host "  - Browser:           POST http://localhost:8080/browser/session"
 Write-Host "  - MCP:               POST http://localhost:8080/mcp/*"
-Write-Host "  - Health check:      GET  http://localhost:8080/health"
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Cyan
 Write-Host "  - View logs:         docker-compose logs -f gateway"
 Write-Host "  - Stop services:     docker-compose down"
-Write-Host "  - Read full guide:   Get-Content SETUP.md"
-Write-Host "  - Use the CLI:       .\bin\toolset.exe status"
+Write-Host "  - Read docs:         Get-Content docs/QUICKSTART.md"
 Write-Host ""
