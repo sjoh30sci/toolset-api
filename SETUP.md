@@ -298,6 +298,43 @@ docker-compose down -v
 # This removes the named volumes (data loss!)
 ```
 
+### Manual cleanup (when containers/volumes conflict)
+
+If you encounter errors like "container already in use" or "volume name conflicts",
+run one of the included cleanup scripts:
+
+**PowerShell:**
+```powershell
+powershell -ExecutionPolicy Bypass -File CLEANUP.ps1
+```
+
+**Command Prompt:**
+```cmd
+CLEANUP.bat
+```
+
+**Or run these commands directly:**
+```powershell
+# Stop and remove all containers with volumes
+docker-compose down -v
+
+# Force-remove any remaining containers
+docker rm -f toolset-gateway
+docker rm -f toolset-search
+docker rm -f toolset-files-server
+docker rm -f toolset-exec-light
+docker rm -f toolset-exec-heavy
+docker rm -f toolset-browser
+
+# Remove orphan volumes
+docker volume rm toolset-data toolset-logs
+docker volume prune -f --filter "label=com.docker.compose.project=toolset-api"
+docker volume prune -f --filter "label=com.docker.compose.project=toolsetapi"
+
+# Remove networks
+docker network rm toolset-network toolset-external
+```
+
 ### Access the file sandbox
 
 Files written via the API are stored in a Docker named volume:

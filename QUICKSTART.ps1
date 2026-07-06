@@ -4,6 +4,12 @@
 Write-Host "Toolset API - Quick Start Setup" -ForegroundColor Green
 Write-Host ""
 
+# Optional cleanup
+Write-Host "NOTE: If you have existing containers from a previous run, you may" -ForegroundColor Yellow
+Write-Host "      encounter 'container already in use' or 'volume name conflicts' errors." -ForegroundColor Yellow
+Write-Host "      Run 'CLEANUP.ps1' to remove old containers and volumes first." -ForegroundColor Yellow
+Write-Host ""
+
 # Check Docker
 Write-Host "Checking prerequisites..."
 try {
