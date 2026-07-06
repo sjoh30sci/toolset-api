@@ -83,11 +83,56 @@ defaults. Key env vars: `TOOLSET_AUTH_MODE`, `TOOLSET_PORT`,
 - **token**: requires `Authorization: Bearer <token>` validated against the
   `api_keys` table, with per-token rate limiting.
 
-## Development
+## Local Development
+
+### Quick Start (30 seconds)
+
+**macOS / Linux:**
 
 ```bash
-make build          # build gateway -> bin/gateway
-make test           # run unit tests
-make compose-config # validate docker-compose syntax
-make clean          # remove build artifacts
+git clone https://github.com/sjoh30sci/toolset-api.git
+cd toolset-api
+bash QUICKSTART.sh
 ```
+
+**Windows (PowerShell):**
+
+```powershell
+git clone https://github.com/sjoh30sci/toolset-api.git
+cd toolset-api
+powershell -ExecutionPolicy Bypass -File QUICKSTART.ps1
+```
+
+Then visit `http://localhost:8080/health` to verify.
+
+### Manual Setup
+
+See [SETUP.md](SETUP.md) for step-by-step instructions, troubleshooting, and
+advanced configuration.
+
+### Development Workflow
+
+```bash
+# Build binaries
+make build          # Gateway binary → bin/gateway
+make build-cli      # CLI tool → bin/toolset
+
+# Run tests
+make test           # Unit tests
+make test-all       # All tests
+make test-e2e       # End-to-end (requires services running)
+
+# Manage services
+make docker-build   # Build all images
+make docker-up      # Start stack
+make docker-down    # Stop stack
+make compose-config # Validate compose file
+
+# Generate SDKs
+make sdk-generate   # TypeScript + Python SDKs
+
+# Release
+make release        # GoReleaser (creates artifacts)
+```
+
+See [Makefile](Makefile) for all available targets.
