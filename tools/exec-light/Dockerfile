@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# exec-light (~800MB): Python 3.11, Node.js 20, Bash, C (gcc), C++ (g++),
+# exec-light (~800MB): Python 3, Node.js 20, Bash, C (gcc), C++ (g++),
 # x86-64 assembly (nasm + ld). Ships the shared executor-server + nsjail sandbox.
 
 # --- Build stage: compile the executor server (Go stdlib only) --------------
@@ -32,8 +32,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Install base tools + runtimes. build-essential provides gcc/g++/ld/make.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    python3.11 \
-    python3-pip \
+    python3 \
     nodejs \
     npm \
     bash \
